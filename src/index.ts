@@ -58,8 +58,14 @@ type MediaStat = {
 }
 
 const updateStatInFolder = async (folder: string, data: Array<MediaStat>): Promise<Array<MediaStat>> => {
-  await fs.promises.writeFile(path.join(folder, '.media-minifer-stats.json'), JSON.stringify(data));
+  if (data.length > 0) {
+    await fs.promises.writeFile(path.join(folder, '.media-minifer-stats.json'), JSON.stringify(data));
+  }
   return data;
+};
+
+const shouldIgnoreFile = (ignoreList: Array<string>, fileName: string):boolean => {
+  return ignoreList.some(_ => _.startsWith('^') ? fileName.match(_) : _ === fileName);
 };
 
 const loadOrCreateStatForFolder = async (folder: string): Promise<Array<MediaStat>> => {
@@ -86,8 +92,7 @@ const loadOrCreateStatForFolder = async (folder: string): Promise<Array<MediaSta
       const fileOrDirectory = path.join(folder, item);
       try {
         const fileStat = await fs.promises.lstat(fileOrDirectory);
-        console.log('->', item);
-        if (fileStat.isFile() && !ignoreList.includes(item.toUpperCase())) {
+        if (fileStat.isFile() && !shouldIgnoreFile(ignoreList, item.toUpperCase())) {
           const extension = path.extname(fileOrDirectory).toUpperCase();
           if (validVideoFormats.includes(extension.toUpperCase())) {
             res.push({
